@@ -2,18 +2,18 @@
 
 namespace CoolifyApi;
 
-public sealed class CoolifyApiClient
+public sealed class SimplifiedCoolifyApiClient
 {
     private const string DefaultBaseUrl = "https://app.coolify.io/api/v1";
 
     public ICoolifyApi Service { get; }
 
-    public CoolifyApiClient(string apiKey, string baseUrl = DefaultBaseUrl, HttpMessageHandler? messageHandler = null)
+    public SimplifiedCoolifyApiClient(string apiKey, string baseUrl = DefaultBaseUrl, HttpMessageHandler? messageHandler = null)
         : this(CreateHttpClient(apiKey, baseUrl, messageHandler))
     {
     }
 
-    public CoolifyApiClient(HttpClient httpClient)
+    public SimplifiedCoolifyApiClient(HttpClient httpClient)
     {
         ArgumentNullException.ThrowIfNull(httpClient);
 
