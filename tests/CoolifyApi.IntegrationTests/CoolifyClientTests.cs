@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using CoolifyApi;
 using Microsoft.Extensions.Configuration;
 using Xunit;
@@ -23,10 +22,7 @@ public class CoolifyClientTests
 
         var baseUrl = configuration["Coolify:BaseUrl"] ?? "https://app.coolify.io/api/v1";
 
-        var httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-
-        _client = new Client(httpClient) { BaseUrl = baseUrl };
+        _client = new Client(apiKey, baseUrl);
     }
 
     [Fact]

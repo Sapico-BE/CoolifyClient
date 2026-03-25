@@ -10,6 +10,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{A84D4E18-7610-46AB-9F6E-EF2017A2D278}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
+		src\openapi.yaml = src\openapi.yaml
 		README.md = README.md
 	EndProjectSection
 EndProject
