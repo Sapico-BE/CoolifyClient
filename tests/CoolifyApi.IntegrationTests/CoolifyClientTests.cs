@@ -6,7 +6,7 @@ namespace CoolifyApi.IntegrationTests;
 
 public class CoolifyClientTests
 {
-    private readonly Client _client;
+    private readonly CoolifyApi.CoolifyApiClient _client;
 
     public CoolifyClientTests()
     {
@@ -22,7 +22,7 @@ public class CoolifyClientTests
 
         var baseUrl = configuration["Coolify:BaseUrl"] ?? "https://app.coolify.io/api/v1";
 
-        _client = new Client(apiKey, baseUrl);
+        _client = new CoolifyApiClient(apiKey, baseUrl);
     }
 
     [Fact]

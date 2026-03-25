@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="Client.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Refit" Version="10.1.6" />
   </ItemGroup>
 

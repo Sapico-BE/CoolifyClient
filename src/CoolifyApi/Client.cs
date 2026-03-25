@@ -2,38 +2,30 @@
 
 namespace CoolifyApi;
 
-public interface ICoolifyApi
+public sealed class CoolifyApiClient
 {
-    [Get("/health")]
-    Task<string> HealthcheckAsync();
+    private const string DefaultBaseUrl = "https://app.coolify.io/api/v1";
 
-    [Get("/servers")]
-    Task<IReadOnlyList<Server>> ListServersAsync();
+    public ICoolifyApi Service { get; }
 
-    [Get("/applications")]
-    Task<IReadOnlyList<Application>> ListApplicationsAsync([AliasAs("tag")] string? tag = null);
+    public CoolifyApiClient(string apiKey, string baseUrl = DefaultBaseUrl, HttpMessageHandler? messageHandler = null)
+        : this(CreateHttpClient(apiKey, baseUrl, messageHandler))
+    {
+    }
 
-    [Get("/projects")]
-    Task<IReadOnlyList<Project>> ListProjectsAsync();
+    public CoolifyApiClient(HttpClient httpClient)
+    {
+        ArgumentNullException.ThrowIfNull(httpClient);
 
-    [Get("/deployments")]
-    Task<IReadOnlyList<Deployment>> ListDeploymentsAsync();
+        if (httpClient.BaseAddress is null)
+        {
+            throw new ArgumentException("HttpClient BaseAddress must be configured.", nameof(httpClient));
+        }
 
-    [Get("/databases")]
-    Task<string> ListDatabasesAsync();
+        Service = RestService.For<ICoolifyApi>(httpClient);
+    }
 
-    [Get("/resources")]
-    Task<string> ListResourcesAsync();
-
-    [Get("/services")]
-    Task<IReadOnlyList<Service>> ListServicesAsync();
-}
-
-public sealed class Client
-{
-    private readonly ICoolifyApi _api;
-
-    public Client(string apiKey, string baseUrl = "https://app.coolify.io/api/v1", HttpMessageHandler? messageHandler = null)
+    private static HttpClient CreateHttpClient(string apiKey, string baseUrl, HttpMessageHandler? messageHandler)
     {
         if (string.IsNullOrWhiteSpace(apiKey))
         {
@@ -47,42 +39,62 @@ public sealed class Client
         httpClient.BaseAddress = new Uri(baseUrl, UriKind.Absolute);
         httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
 
-        _api = RestService.For<ICoolifyApi>(httpClient);
+        return httpClient;
     }
 
-    public Client(HttpClient httpClient)
+    public Task<string> HealthcheckAsync() => Service.Healthcheck();
+
+    public async Task<IReadOnlyList<ApplicationSummary>> ListApplicationsAsync(string? tag = null)
     {
-        if (httpClient.BaseAddress is null)
-        {
-            throw new ArgumentException("HttpClient BaseAddress must be configured.", nameof(httpClient));
-        }
-
-        _api = RestService.For<ICoolifyApi>(httpClient);
+        var applications = await Service.ListApplications(tag ?? string.Empty);
+        return applications
+            .Select(a => new ApplicationSummary(a.Uuid, a.Name, a.BuildPack, a.Status, a.Fqdn))
+            .ToArray();
     }
 
-    public Task<string> HealthcheckAsync() => _api.HealthcheckAsync();
+    public async Task<IReadOnlyList<ServerSummary>> ListServersAsync()
+    {
+        var servers = await Service.ListServers();
+        return servers
+            .Select(s => new ServerSummary(s.Uuid, s.Name, s.Ip, s.Port, s.User))
+            .ToArray();
+    }
 
-    public Task<IReadOnlyList<Server>> ListServersAsync() => _api.ListServersAsync();
+    public async Task<IReadOnlyList<ProjectSummary>> ListProjectsAsync()
+    {
+        var projects = await Service.ListProjects();
+        return projects
+            .Select(p => new ProjectSummary(p.Uuid, p.Name, p.Description))
+            .ToArray();
+    }
 
-    public Task<IReadOnlyList<Application>> ListApplicationsAsync(string? tag = null) => _api.ListApplicationsAsync(tag);
+    public async Task<IReadOnlyList<DeploymentSummary>> ListDeploymentsAsync()
+    {
+        var deployments = await Service.ListDeployments();
+        return deployments
+            .Select(d => new DeploymentSummary(d.DeploymentUuid, d.Status, d.ApplicationName, d.ServerName))
+            .ToArray();
+    }
 
-    public Task<IReadOnlyList<Project>> ListProjectsAsync() => _api.ListProjectsAsync();
+    public Task<string> ListDatabasesAsync() => Service.ListDatabases();
 
-    public Task<IReadOnlyList<Deployment>> ListDeploymentsAsync() => _api.ListDeploymentsAsync();
+    public Task<string> ListResourcesAsync() => Service.ListResources();
 
-    public Task<string> ListDatabasesAsync() => _api.ListDatabasesAsync();
-
-    public Task<string> ListResourcesAsync() => _api.ListResourcesAsync();
-
-    public Task<IReadOnlyList<Service>> ListServicesAsync() => _api.ListServicesAsync();
+    public async Task<IReadOnlyList<ServiceSummary>> ListServicesAsync()
+    {
+        var services = await Service.ListServices();
+        return services
+            .Select(s => new ServiceSummary(s.Uuid, s.Name, s.ServiceType))
+            .ToArray();
+    }
 }
 
-public sealed record Server(string Uuid, string Name, string Ip, int Port, string User);
+public sealed record ApplicationSummary(string Uuid, string Name, string BuildPack, string Status, string Fqdn);
 
-public sealed record Application(string Uuid, string Name, string BuildPack, string GitRepository, string GitBranch);
+public sealed record ServerSummary(string Uuid, string Name, string Ip, int Port, string User);
 
-public sealed record Project(string Uuid, string Name, string? Description);
+public sealed record ProjectSummary(string Uuid, string Name, string Description);
 
-public sealed record Deployment(string DeploymentUuid, string Status, string ApplicationName, string ServerName);
+public sealed record DeploymentSummary(string DeploymentUuid, string Status, string ApplicationName, string ServerName);
 
-public sealed record Service(string Uuid, string Name, string ServiceType);
+public sealed record ServiceSummary(string Uuid, string Name, string ServiceType);
